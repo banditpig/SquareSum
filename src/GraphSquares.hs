@@ -9,6 +9,8 @@ import qualified Data.GraphViz.Types               as G
 import           Data.List
 import qualified Data.Text.Lazy                    as TL
 import qualified Data.Text.Lazy.IO                 as TL
+import           System.Exit
+import           System.Process
 
 type Label = Int
 type V = [(Int, Label)]
@@ -39,8 +41,8 @@ isSquare n = sq * sq == n where sq = floor $ sqrt (fromIntegral n :: Double)
 
 main :: IO ()
 main = do
-    let (vs, es) = buildGraph [1..25]
+    let (vs, es) = buildGraph [1..24]
     let dotGraph = G.graphElemsToDot graphParams vs es :: G.DotGraph Int
     let dotText  = G.printDotGraph dotGraph :: TL.Text
-    TL.writeFile "files.dot" dotText
-    -- on command line ->dot files.dot -Tpng > files.png
+    TL.writeFile "numbers.dot" dotText
+    callCommand  "dot numbers.dot -Tpng > numbers.png" >>= print

@@ -8,14 +8,15 @@ import qualified Data.GraphViz                     as G
 import qualified Data.GraphViz.Attributes.Complete as G
 import qualified Data.GraphViz.Types               as G
 import           Data.List
+import           Data.Monoid
 import qualified Data.Text.Lazy                    as TL
 import qualified Data.Text.Lazy.IO                 as TL
 import           System.Exit
 import           System.Process
 
-newtype V a     = V [a] deriving Show
-newtype E a     = E [(a, a)] deriving Show
-newtype Graph a = G (V a , E a) deriving Show
+newtype V a     = V [a]        deriving Show
+newtype E a     = E [(a, a)]   deriving Show
+newtype Graph a = G (V a ,E a) deriving Show
 
 sameEdge ::(Eq a) => (a, a) ->  (a, a) -> Bool
 sameEdge (a, b) (c, d) = a == d && b == c || a == c && b == d
@@ -46,13 +47,20 @@ graphLabeller vf ef (G (V vs, E es)) = (vs', es') where
     vs' = map (\ v -> (v, vf v)) vs
     es' = map (\ (x, y) -> (x, y, ef x y)) es
 
-main :: IO ()
-main = do
-    let g = buildGraph [1 .. 24] sqEdge
-    print g
-    let (vs, es) = graphLabeller (\x -> x) (\x y -> x + y)  g
-    print es
+makeImage name (vs, es) = do
     let dotGraph = G.graphElemsToDot graphParams vs es :: G.DotGraph Int
     let dotText  = G.printDotGraph dotGraph :: TL.Text
-    TL.writeFile "numbers.dot" dotText
-    callCommand  "dot numbers.dot -Tpng > numbers.png" >>= print
+    TL.writeFile (name <> ".dot") dotText
+    callCommand  ("dot " <> name <> ".dot -Tpng > " <> name <> ".png") >>= print
+
+main :: IO ()
+main = do
+    let g1 = buildGraph [1..20] sqEdge
+    let (vs, es) = graphLabeller id (+) g1
+    makeImage "1_20" (vs, es)
+
+    let g2 = buildGraph [20..30] sqEdge
+    let (vs, es) = graphLabeller id (+) g2
+    makeImage "20_30" (vs, es)
+
+--  8 1 15 10 6 3 13 12 4 5 11 14 2 7 9

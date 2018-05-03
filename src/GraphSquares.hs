@@ -42,19 +42,13 @@ graphLabeller vf ef (G (V vs, E es)) = (vs', es') where
     vs' = map (\ v -> (v, vf v)) vs
     es' = map (\ (x, y) -> (x, y, ef x y)) es
 
--- graphParams ::(Show a) => G.GraphvizParams a a a () a
--- graphParams = G.defaultParams {
---   G.fmtNode = const [colorAttribute $ G.RGB 0 0 0],
---   G.fmtEdge = \(t, f, l) -> [G.textLabel (TL.pack $ show l), G.arrowTo G.noArrow, colorAttribute (G.RGB 200 0 0)]}
---   where
---     colorAttribute color = G.Color $ G.toColorList [ color ]
-
 graphParams ::(Show a) => G.GraphvizParams a a a () a
 graphParams = G.defaultParams {
   G.fmtNode = const [colorAttribute $ G.RGB 0 0 0],
-  G.fmtEdge = \(t, f, _) -> [ G.arrowTo G.noArrow, colorAttribute (G.RGB 200 0 0)]}
+  G.fmtEdge = \(t, f, l) -> [G.textLabel (TL.pack $ show l), G.arrowTo G.noArrow, colorAttribute (G.RGB 200 0 0)]}
   where
     colorAttribute color = G.Color $ G.toColorList [ color ]
+
 
 makeImage :: FilePath -> ([(Int, Int)], [(Int, Int, Int)]) -> IO ()
 makeImage name (vs, es) = do

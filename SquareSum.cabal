@@ -17,4 +17,4 @@ executable SquareSum
   hs-source-dirs:      src
   main-is:             GraphSquares.hs
   default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5,  graphviz, text, process
+  build-depends:       base >= 4.7 && < 5,  graphviz, text, process, containers >= 0.5.11.0

@@ -8,6 +8,7 @@ import qualified Data.GraphViz                     as G
 import qualified Data.GraphViz.Attributes.Complete as G
 import qualified Data.GraphViz.Types               as G
 import           Data.List
+import           Data.Map                          (fromListWith, toList)
 import           Data.Monoid
 import qualified Data.Text.Lazy                    as TL
 import qualified Data.Text.Lazy.IO                 as TL
@@ -18,6 +19,25 @@ newtype V a     = V [a]        deriving Show
 newtype E a     = E [(a, a)]   deriving Show
 newtype Graph a = G (V a ,E a) deriving Show
 
+newtype GraphE a  = GraphE [ (a, [a])] deriving Show
+newtype GraphEW a w = GraphEW [ (a, [(a, w)]) ] deriving Show
+
+addWeights :: (a -> a -> w) -> GraphE a -> GraphEW a w
+addWeights f (GraphE es) = GraphEW $ fmap weight es where
+    weight (n, ns) = (n, fmap (tf n) ns)
+    tf n n' = (n', f n' n)
+
+buildGraphEW :: (Eq a, Ord a) => [a] -> (a -> a -> Bool) -> (a -> a -> w) -> GraphEW a w
+buildGraphEW vs edf wf = GraphEW (adj vs) where
+    adj vs  = combine . join . map f $ vs where
+        f n = foldr (\v a -> if edf n v then (n, [(v, wf n v) ]) : a else a) [] vs
+        combine  eds = toList $ fromListWith (++) [(k, v) | (k, v) <- eds]
+
+buildGraphE :: (Eq a, Ord a) => [a] -> (a -> a -> Bool) -> GraphE a
+buildGraphE vs ed = GraphE (adj vs) where
+    adj vs  = combine . join . map f $ vs where
+        f n = foldr (\v a -> if ed n v then (n, [v]) : a else a) [] vs
+        combine  eds = toList $ fromListWith (++) [(k, v) | (k, v) <- eds]
 
 buildGraph :: (Eq a) => [a] -> (a -> a -> Bool) -> Graph a
 buildGraph vs ed = G (V vs, E es) where
@@ -35,12 +55,11 @@ isSquare :: Integral a => a -> Bool
 isSquare n = sq * sq == n where sq = floor $ sqrt (fromIntegral n :: Double)
 
 
-
 -- Labelling of vertices and edges for use in Graphviz
 graphLabeller :: (a -> b) -> (a -> a -> c) -> Graph a -> ([(a,b)], [(a,a,c)])
 graphLabeller vf ef (G (V vs, E es)) = (vs', es') where
-    vs' = map (\ v -> (v, vf v)) vs
-    es' = map (\ (x, y) -> (x, y, ef x y)) es
+    vs' = fmap (\ v -> (v, vf v)) vs
+    es' = fmap (\ (x, y) -> (x, y, ef x y)) es
 
 graphParams ::(Show a) => G.GraphvizParams a a a () a
 graphParams = G.defaultParams {
@@ -62,6 +81,7 @@ graphToImage  n = do
     let g = buildGraph [1..n] sqEdge
     let (vs, es) = graphLabeller id (+) g
     makeImage ("../images/1_" <> show n) (vs, es)
+
 
 main :: IO ()
 main = do
